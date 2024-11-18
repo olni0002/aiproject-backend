@@ -1,5 +1,6 @@
 package com.example.aitest.service;
 
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -12,14 +13,17 @@ import reactor.core.publisher.Mono;
 public class ChatService {
     private final WebClient webClient;
     private Body body;
+    private Environment environment;
 
-    public ChatService(WebClient.Builder webClientBuilder, Body.BodyBuilder bodyBuilder) {
+    public ChatService(WebClient.Builder webClientBuilder, Body.BodyBuilder bodyBuilder, Environment environment) {
         this.webClient = webClientBuilder.baseUrl("https://api-inference.huggingface.co").build();
 
         this.body = bodyBuilder.model("Qwen/Qwen2.5-Coder-32B-Instruct")
                             .max_tokens(10000)
                             .stream(false)
                             .build();
+        
+        this.environment = environment;
     }
 
     public Mono<String> chatPrompt(String prompt) {
@@ -30,7 +34,7 @@ public class ChatService {
         return webClient.post()
                 .uri("/models/Qwen/Qwen2.5-Coder-32B-Instruct/v1/chat/completions")
                 .bodyValue(body)
-                .header("Authorization", "Bearer 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")
+                .header("Authorization", "Bearer " + environment.getProperty("hf.access.token"))
                 .header("Content-Type", "application/json")
                 .retrieve()
                 .bodyToMono(String.class);
